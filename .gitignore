@@ -6,3 +6,7 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 android/local.properties
+android/.gradle/
+.idea/
+*.iml
+.DS_Store

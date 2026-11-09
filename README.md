@@ -13,9 +13,9 @@ Flutter starter app for offline-first, educational skin screening. **This applic
 
 ## Run in VS Code
 
-Install Flutter and the Flutter/Dart VS Code extensions. Open this folder, run `flutter pub get`, then launch `lib/main.dart` on an Android emulator or device. The local environment used to scaffold this project did not have Flutter/Dart installed, so dependency resolution and device execution still need to be completed on a Flutter-equipped machine.
+Open `SkinAI Assist.code-workspace` in VS Code, run `flutter pub get`, and launch `lib/main.dart`. Android and iOS project files are included. For Android development, install Android Studio or the Android SDK command-line tools, the platform/build tools matching the project, and accept Android SDK licenses with `flutter doctor --android-licenses`. Connect a physical device or start an emulator before `flutter run`. iOS builds require macOS with Xcode.
 
-Camera permissions are required: add `CAMERA` permission to Android and `NSCameraUsageDescription` to iOS before running on hardware. The image picker plugin opens the platform camera UI.
+Camera permission and usage descriptions are configured in the Android manifest and iOS plist. The image picker plugin opens the platform camera UI.
 
 ## Add an inference model
 
@@ -50,3 +50,5 @@ Scan metadata is stored in an encrypted Hive box. The encryption key is generate
 - Supply and validate model assets, license, preprocessing, labels, and device performance.
 - Complete camera permission strings, app icons, package identifiers, and signing configuration.
 - Review accessibility, privacy, and medical-device/regulatory requirements for intended deployment markets.
+
+
