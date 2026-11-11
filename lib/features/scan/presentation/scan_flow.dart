@@ -9,6 +9,7 @@ import 'package:image_cropper/image_cropper.dart';
 
 import '../../../core/providers/scan_providers.dart';
 import '../../../core/services/image_quality_checker.dart';
+import '../../../core/services/skin_classifier.dart';
 import '../../../core/services/scan_store.dart';
 import '../../../core/widgets/common.dart';
 
@@ -21,6 +22,7 @@ class ScanFlow extends ConsumerStatefulWidget {
 
 class _ScanFlowState extends ConsumerState<ScanFlow> {
   final _qualityChecker = const ImageQualityChecker();
+  final _skinClassifier = const SkinClassifier();
   CameraController? _camera;
   XFile? image;
   ImageQualityReport? _qualityReport;
@@ -36,6 +38,9 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
   bool _flashEnabled = false;
   bool _showGrid = true;
   bool _saving = false;
+  bool _isAnalyzing = false;
+  SkinPrediction? _prediction;
+  String? _analysisError;
   String? _cameraError;
   Offset? _focusPoint;
   Timer? _focusTimer;
@@ -156,6 +161,8 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
       }
       setState(() {
         image = captured;
+        _prediction = null;
+        _analysisError = null;
         _qualityReport = null;
         _isCheckingQuality = true;
         _isCapturing = false;
@@ -213,6 +220,8 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
     }
     setState(() {
       image = croppedImage;
+      _prediction = null;
+      _analysisError = null;
       _qualityReport = null;
       _isCheckingQuality = true;
     });
@@ -307,7 +316,41 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
     }
     if (step == 2) await _releaseCamera();
     if (!mounted) return;
+
+    if (step == 3) {
+      final selectedImage = image;
+      setState(() => step++);
+      if (selectedImage != null) {
+        await _analyzePhoto(selectedImage);
+      }
+      return;
+    }
+
     setState(() => step++);
+  }
+
+  Future<void> _analyzePhoto(XFile selectedImage) async {
+    setState(() {
+      _isAnalyzing = true;
+      _analysisError = null;
+      _prediction = null;
+    });
+
+    try {
+      final prediction = await _skinClassifier.classify(
+        File(selectedImage.path),
+      );
+      if (!mounted) return;
+      setState(() => _prediction = prediction);
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _analysisError =
+            'The model could not analyze this photo on this device. You can still save the visit without an AI result.',
+      );
+    } finally {
+      if (mounted) setState(() => _isAnalyzing = false);
+    }
   }
 
   void _showMessage(String message) {
@@ -331,6 +374,11 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
                 'Recent change': changed,
               },
               duration: duration,
+              prediction: _prediction?.topMatch.label,
+              confidence: _prediction?.topMatch.score,
+              risk: _prediction == null
+                  ? null
+                  : 'Not assessed',
             ),
           );
 
@@ -352,7 +400,7 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
       'A few questions',
       'Take a photo',
       'Review photo',
-      'Save visit',
+      'AI result & save',
     ];
 
     return Scaffold(
@@ -682,6 +730,8 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
               : () async {
                   setState(() {
                     image = null;
+                    _prediction = null;
+                    _analysisError = null;
                     _qualityReport = null;
                     step = 2;
                   });
@@ -729,34 +779,116 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
             width: 90,
             height: 90,
             decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: .12),
+              color: Colors.teal.withValues(alpha: .12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.check_circle_outline,
+              Icons.auto_awesome,
               size: 52,
-              color: Colors.green,
+              color: Colors.teal,
             ),
           ),
         ),
         const SizedBox(height: 20),
-        _title(context, 'Save this visit'),
+        _title(context, 'Experimental AI output'),
         const Text(
-          'No AI model is installed, so this visit cannot classify your photo. Saving records the questionnaire only; no prediction or risk assessment is made.',
+          'MobileNetV3-Large was trained on PAD-UFES-20 smartphone images. It is running locally for an educational prototype. Model scores are not medical probabilities or a diagnosis.',
         ),
         const SizedBox(height: 16),
         Card(
           child: ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title:
-                const Text('No diagnosis or AI analysis'),
+            title: const Text('Research prototype only'),
             subtitle: const Text(
-              'Your answers are saved on this device. The photo is not added to your history. Consult a healthcare professional about concerning changes.',
+              'This model correctly identified 4 of 9 melanoma and 5 of 32 squamous cell carcinoma images in its patient-held-out evaluation. A low score or a benign-looking result does not rule out cancer. Consult a healthcare professional about concerning changes.',
             ),
           ),
         ),
+        if (_isAnalyzing) ...[
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2),
+                  ),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child:
+                          Text('Running on-device model…')),
+                ],
+              ),
+            ),
+          ),
+        ] else if (_prediction case final prediction?) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Top model match: ${prediction.topMatch.label}',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium,
+                  ),
+                  const SizedBox(height: 6),
+                  const Text('Uncalibrated model scores'),
+                  const SizedBox(height: 12),
+                  for (final item
+                      in prediction.scores.take(3)) ...[
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 132,
+                          child: Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: item.score
+                                .clamp(0.0, 1.0)
+                                .toDouble(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                            '${(item.score * 100).round()}%'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const Text(
+            'The photo is analyzed on this device and is not saved to visit history. It is not sent to a server.',
+          ),
+        ] else if (_analysisError case final error?) ...[
+          Card(
+            color: Theme.of(context)
+                .colorScheme
+                .errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(error),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
         FilledButton(
-          onPressed: _saving ? null : _saveVisit,
+          onPressed:
+              _saving || _isAnalyzing ? null : _saveVisit,
           child: Text(_saving
               ? 'Saving…'
               : 'Save visit to history'),

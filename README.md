@@ -1,6 +1,6 @@
 # SkinAI Assist
 
-SkinAI Assist is a Flutter mobile app prototype for educational skin screening. It is **not a medical diagnostic tool**. It does not currently run an AI model or classify skin images. Do not use it to diagnose or make treatment decisions.
+SkinAI Assist is a Flutter mobile app prototype for educational skin screening. It is **not a medical diagnostic tool**. Its experimental AI output is for demonstrating on-device inference only; do not use it to diagnose or make treatment decisions.
 
 ## Current implementation
 
@@ -12,12 +12,12 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 | Home dashboard and bottom navigation | Implemented; dashboard header stays fixed while its content scrolls |
 | Body area and symptom questionnaire | Saves the selected area, answers, and duration as a local visit; no photo is saved to history |
 | Camera capture and photo review | Live camera preview, tap-to-focus/exposure, flash toggle, grid overlay, capture/retake, crop, basic resolution/brightness/blur checks, and best-effort temporary photo cleanup; quality checks are heuristic and are not medical validation |
-| Analysis and results | Placeholder only; no model output is generated and no risk category is assigned |
+| Analysis and results | MobileNetV3-Large runs locally on a reviewed photo and displays uncalibrated class scores; no risk category or care recommendation is assigned |
 | Local storage | Visit metadata and optional profile details are stored in encrypted Hive boxes; onboarding acceptance is stored in a separate local preferences box |
 | History, education, profile | History list, detail view, and delete confirmation implemented; profile fields persist in encrypted storage; profile-only and full local-data clear actions are available |
 | Emergency advice | Dedicated urgent-care screen linked from Home and Education; includes source references and location-neutral emergency wording |
 | Riverpod | Used for encrypted scan-history state and persistence; camera capture remains widget-local state |
-| TensorFlow Lite | Dependency and `assets/models/` location are present; no model or inference adapter is included |
+| TensorFlow Lite | PAD-UFES-20 MobileNetV3-Large model and local Flutter inference adapter are included in `assets/models/` and `lib/core/services/skin_classifier.dart` |
 | Firebase | Not configured (optional in the project brief) |
 | Automated tests | A few starter tests exist; feature and platform coverage is incomplete |
 
@@ -28,6 +28,23 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 - For Android: Android Studio or Android SDK command-line tools, Android SDK Platform 36, Android Build Tools, Platform Tools, and a Java 17-compatible Android build environment. Android Studio can install and manage these components.
 - For iOS: a Mac running a supported version of Xcode. iOS builds and the iOS Simulator cannot be run from Windows.
 - A physical device or emulator/simulator for running the app.
+
+## AI model (educational prototype)
+
+The on-device model is **MobileNetV3-Large trained on PAD-UFES-20**, a
+six-class smartphone-image dataset. It analyzes the reviewed photo locally and
+shows the top three uncalibrated model scores. The photo is temporary and is
+not saved to history. See [`ai_training/README.md`](ai_training/README.md) for
+the patient-grouped training workflow and
+[`assets/models/MODEL_CARD.md`](assets/models/MODEL_CARD.md) for dataset
+attribution, preprocessing, and evaluation details.
+
+On the patient-held-out test split, this run achieved 65.0% accuracy and a
+0.549 macro-F1. It identified 4/9 melanoma images and 5/32 squamous cell
+carcinoma images. PAD-UFES-20 is small, imbalanced, and drawn from a specific
+population; this result is not reliable for screening and must not be
+presented as a diagnosis, a cancer rule-out, or a substitute for clinical
+review.
 
 Check the local setup:
 
@@ -171,7 +188,7 @@ lib/
     profile/presentation/           Optional profile fields
 assets/
   images/skinai_logo.png
-  models/                           Reserved for a properly licensed TFLite model
+  models/                           MobileNetV3 TFLite model, labels, and model card
 android/                            Android Gradle project, manifest, icons and splash
 ios/                                Xcode project, permissions, icons and launch screen
 ```
@@ -182,7 +199,7 @@ flowchart TD
   Screens --> Providers[Riverpod scan-history state]
   Providers --> ScanStore[Encrypted Hive scan box]
   ScanStore --> Key[Key stored in platform secure storage]
-  Model[Future on-device TFLite adapter] -. model is not included .-> Screens
+  Model[Experimental on-device TFLite classifier] --> Screens
 ```
 
 ## Privacy and safety
@@ -194,16 +211,16 @@ flowchart TD
 
 ## Remaining work from the project brief
 
-### Required before the app can perform screening
+### Required before clinical or real-world screening
 
-- Obtain a properly licensed and clinically reviewed EfficientNet-Lite0 or MobileNetV3 model, its labels, preprocessing details, and model card. None is included in this repository.
-- Implement and integrate the on-device TFLite inference adapter, image preprocessing, confidence calibration, and a validated triage policy. Until then, the app must not claim to analyze/classify an image.
+- Independently validate the model on representative local populations, camera conditions, and skin tones. Current test support is too small for melanoma and squamous cell carcinoma.
+- Calibrate confidence and obtain clinical review of any triage policy before exposing medical risk categories or recommendations. The app currently reports experimental class scores only.
 - Tune and validate image quality thresholds across supported phone cameras and skin tones; current checks are preliminary heuristics only.
-- Implement the analysis progress flow and real result presentation only after a model is available. Show top predictions, calibrated confidence, risk category, and appropriately reviewed recommendations; include an explicit emergency path.
+- Improve rare-class detection and evaluate a larger patient-held-out or external dataset before making model claims.
 
 ### App features still to complete
 
-- Persist model results with a clear status after a validated inference model becomes available; current history stores questionnaire metadata only.
+- Model class and score are stored with visit metadata; risk remains explicitly not assessed.
 - Verify camera preview, flash, focus, grid, and cropping behavior across supported Android/iOS devices; camera capabilities vary by hardware.
 - Extend Riverpod to profile, onboarding preferences, and future inference state as those features are completed.
 

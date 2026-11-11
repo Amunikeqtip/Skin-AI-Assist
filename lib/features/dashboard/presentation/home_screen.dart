@@ -34,13 +34,7 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children: [
-                        Text('SkinAI Assist',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                    fontWeight:
-                                        FontWeight.bold)),
+                        
                         const Text(
                             'Your skin health companion'),
                       ],

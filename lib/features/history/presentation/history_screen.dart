@@ -71,8 +71,8 @@ class HistoryScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 scan.isAnalyzed
-                    ? 'Prediction: ${scan.prediction} (${((scan.confidence ?? 0) * 100).round()}%)\nRisk: ${scan.risk}'
-                    : 'No AI analysis was performed. No prediction or risk was assigned.',
+                    ? 'Experimental model output: ${scan.prediction} (${((scan.confidence ?? 0) * 100).round()}% score)\nRisk assessment: ${scan.risk}'
+                    : 'No AI output was saved for this visit. No risk assessment was assigned.',
               ),
               const SizedBox(height: 8),
               const Text(
