@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/widgets/common.dart';
 
 class EducationScreen extends StatelessWidget {
@@ -51,6 +52,7 @@ class EducationScreen extends StatelessWidget {
                     title: const Text(
                         'When to get urgent help'),
                     subtitle: const Text(
-                        'Seek urgent medical help for severe pain, rapidly spreading redness, high fever, or serious allergic symptoms.')))
+                        'Seek urgent medical help for severe pain, rapidly spreading skin changes, fever, or serious allergic symptoms.'),
+                    onTap: () => c.push('/emergency')))
           ]));
 }

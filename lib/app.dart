@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'features/dashboard/presentation/home_screen.dart';
+import 'features/education/presentation/emergency_advice_screen.dart';
 import 'features/education/presentation/education_screen.dart';
 import 'features/history/presentation/history_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
@@ -54,6 +55,10 @@ final _router = GoRouter(
     GoRoute(
         path: '/onboarding',
         builder: (_, __) => const OnboardingScreen()),
+    GoRoute(
+      path: '/emergency',
+      builder: (_, __) => const EmergencyAdviceScreen(),
+    ),
   ],
 );
 
