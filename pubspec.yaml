@@ -28,4 +28,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/skinai_logo.png
+    - assets/images/skin_care_hero.png
+    - assets/images/sun_safety.png
     - assets/models/

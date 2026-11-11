@@ -9,12 +9,12 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 | Branding, Material 3 theme, light/dark appearance | Implemented |
 | Branded startup | Native splash uses the supplied logo; a Flutter loading indicator appears while encrypted storage opens, with retry on failure |
 | First-run disclaimer and three-step onboarding | Implemented; acceptance is stored in local preferences |
-| Home dashboard and bottom navigation | Implemented; dashboard header stays fixed while its content scrolls |
+| Home dashboard and bottom navigation | Illustrated hero, fixed brand header, quick links, recent visit card, and locally saved daily care checklist |
 | Body area and symptom questionnaire | Saves the selected area, answers, and duration as a local visit; no photo is saved to history |
 | Camera capture and photo review | Live camera preview, tap-to-focus/exposure, flash toggle, grid overlay, capture/retake, crop, basic resolution/brightness/blur checks, and best-effort temporary photo cleanup; quality checks are heuristic and are not medical validation |
 | Analysis and results | MobileNetV3-Large runs locally on a reviewed photo and displays uncalibrated class scores; no risk category or care recommendation is assigned |
 | Local storage | Visit metadata and optional profile details are stored in encrypted Hive boxes; onboarding acceptance is stored in a separate local preferences box |
-| History, education, profile | History list, detail view, and delete confirmation implemented; profile fields persist in encrypted storage; profile-only and full local-data clear actions are available |
+| History, education, profile | Searchable learning topics with illustrations, history list and details, profile fields in encrypted storage, and local-data clear actions |
 | Emergency advice | Dedicated urgent-care screen linked from Home and Education; includes source references and location-neutral emergency wording |
 | Riverpod | Used for encrypted scan-history state and persistence; camera capture remains widget-local state |
 | TensorFlow Lite | PAD-UFES-20 MobileNetV3-Large model and local Flutter inference adapter are included in `assets/models/` and `lib/core/services/skin_classifier.dart` |
