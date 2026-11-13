@@ -15,10 +15,12 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 | Analysis and results | MobileNetV3-Large runs locally on a reviewed photo and displays uncalibrated class scores; no risk category or care recommendation is assigned |
 | Local storage | Visit metadata and optional profile details are stored in encrypted Hive boxes; onboarding acceptance is stored in a separate local preferences box |
 | History, education, profile | Searchable learning topics with illustrations, history list and details, profile fields in encrypted storage, and local-data clear actions |
+| Account access | Firebase email/password sign-in and account creation, protected app routes, sign-out, and a prototype demo account |
+| Cloud account data | Firestore sync for profile details, care-routine preferences, and scan metadata; scan images remain on device |
 | Emergency advice | Dedicated urgent-care screen linked from Home and Education; includes source references and location-neutral emergency wording |
 | Riverpod | Used for encrypted scan-history state and persistence; camera capture remains widget-local state |
 | TensorFlow Lite | PAD-UFES-20 MobileNetV3-Large model and local Flutter inference adapter are included in `assets/models/` and `lib/core/services/skin_classifier.dart` |
-| Firebase | Not configured (optional in the project brief) |
+| Firebase | Authentication and Firestore integration added; connect a Firebase project using the setup below |
 | Automated tests | A few starter tests exist; feature and platform coverage is incomplete |
 
 ## Requirements
@@ -28,6 +30,7 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 - For Android: Android Studio or Android SDK command-line tools, Android SDK Platform 36, Android Build Tools, Platform Tools, and a Java 17-compatible Android build environment. Android Studio can install and manage these components.
 - For iOS: a Mac running a supported version of Xcode. iOS builds and the iOS Simulator cannot be run from Windows.
 - A physical device or emulator/simulator for running the app.
+- A Firebase project with Email/Password Authentication and Cloud Firestore enabled.
 
 ## AI model (educational prototype)
 
@@ -68,6 +71,29 @@ flutter doctor -v
 5. Press **F5** to debug `lib/main.dart`, or run `flutter run` in the terminal.
 
 The first Android build downloads Gradle and Android dependencies and can take several minutes.
+
+## Firebase setup (required for account features)
+
+The app now uses Firebase Authentication for sign-in/sign-up. Firestore stores each user's profile, care-routine preferences, and scan metadata under that user's UID. **Scan images are not uploaded.** Local Hive storage remains as an offline cache. Firestore security rules are in [`firestore.rules`](firestore.rules).
+
+1. Create a Firebase project in the Firebase Console.
+2. Add an Android app with package name `com.skinaiassist.skinai_assist`, and an iOS app with bundle ID `com.skinaiassist.skinaiAssist`.
+3. In **Authentication → Sign-in method**, enable **Email/Password**.
+4. Create a **Cloud Firestore** database. In **Firestore → Rules**, publish the contents of `firestore.rules`. These rules limit each account to its own document and scan subcollection.
+5. Download the Android `google-services.json` and put it at `android/app/google-services.json`. The Google Services Gradle plugin is enabled in this project.
+6. For iOS, download `GoogleService-Info.plist`, add it to the `ios/Runner` folder, and include it in the Runner target in Xcode. iOS builds require macOS and Xcode.
+7. Run the Android app from the project folder:
+
+   ```powershell
+   flutter pub get
+   flutter run
+   ```
+
+The repository also supports runtime Firebase options through `--dart-define` (`FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, `FIREBASE_MESSAGING_SENDER_ID`, and the platform-specific `FIREBASE_*_APP_ID`) for platforms without native config files.
+
+The **Try demo account** button uses `demo@skinai.app` with password `SkinAI123!`. On first use, the app creates this account in the connected Firebase project; later uses sign into it. These credentials are deliberately public for presentations. Do not use this demo account for real user data, and remove the demo shortcut before any public release.
+
+If Firebase has not been configured for the target platform, the app still opens, but sign-in and account creation show that Firebase setup is required.
 
 ## Android setup and run
 
@@ -232,4 +258,4 @@ flowchart TD
 - Confirm app identifiers, Android/iOS permissions, privacy disclosures, signing/provisioning, and release builds for each store.
 - Review intended market-specific medical-device, privacy, and regulatory requirements before any real-world screening deployment.
 
-Firebase is listed as optional in the brief and is not configured; offline operation is the current direction. Do not add a backend unless the product requirements change.
+Firebase is integrated in the app code, but a project still needs to be connected using the setup steps above. Account data sync is best-effort while offline and syncs again at the next launch/sign-in. Confirm the data-retention and privacy disclosures before using real user accounts.

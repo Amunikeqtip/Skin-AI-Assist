@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -7,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import 'app.dart';
+import 'core/services/firebase_services.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -68,6 +70,19 @@ class _SkinAiBootstrapState extends State<SkinAiBootstrap> {
       if (!Hive.isBoxOpen('profile')) {
         await Hive.openBox('profile',
             encryptionCipher: cipher);
+      }
+
+      var firebaseReady = false;
+      try {
+        firebaseReady = await FirebaseSetup.initialize();
+      } catch (_) {
+        firebaseReady = false;
+      }
+      FirebaseAuthService.instance.markReady(firebaseReady);
+      if (firebaseReady) {
+        unawaited(FirebaseCloudStore.instance
+            .syncLocalData()
+            .catchError((_) {}));
       }
 
       if (!mounted) return;

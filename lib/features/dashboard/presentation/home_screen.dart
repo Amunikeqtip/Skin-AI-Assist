@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import '../../../core/providers/scan_providers.dart';
+import '../../../core/services/firebase_services.dart';
 import '../../../core/widgets/common.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -82,6 +83,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'date': _routineDate,
       'completed': _completed.toList(),
     });
+    await FirebaseCloudStore.instance.syncPreferences({
+      'accepted':
+          _preferences.get('accepted', defaultValue: false),
+      'daily_care_routine':
+          _preferences.get('daily_care_routine'),
+    }).catchError((_) {});
   }
 
   @override

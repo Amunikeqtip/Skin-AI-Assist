@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/firebase_services.dart';
+import 'features/auth/presentation/auth_screens.dart';
 import 'features/dashboard/presentation/home_screen.dart';
 import 'features/education/presentation/emergency_advice_screen.dart';
 import 'features/education/presentation/education_screen.dart';
@@ -22,12 +24,22 @@ class SkinAiApp extends StatelessWidget {
       );
 }
 
+final _authRouterRefresh = AuthRouterRefresh();
+
 final _router = GoRouter(
   initialLocation: Hive.box('preferences')
           .get('accepted', defaultValue: false)
       ? '/'
       : '/disclaimer',
   routes: [
+    GoRoute(
+      path: '/login',
+      builder: (_, __) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (_, __) => const SignUpScreen(),
+    ),
     ShellRoute(
       builder: (context, state, child) => AppShell(
           location: state.matchedLocation, child: child),
@@ -60,6 +72,22 @@ final _router = GoRouter(
       builder: (_, __) => const EmergencyAdviceScreen(),
     ),
   ],
+  refreshListenable: _authRouterRefresh..start(),
+  redirect: (context, state) {
+    final location = state.matchedLocation;
+    final isPublic = location == '/disclaimer' ||
+        location == '/onboarding' ||
+        location == '/login' ||
+        location == '/signup';
+    final user = FirebaseAuthService.instance.currentUser;
+
+    if (!isPublic && user == null) return '/login';
+    if ((location == '/login' || location == '/signup') &&
+        user != null) {
+      return '/';
+    }
+    return null;
+  },
 );
 
 class AppShell extends StatelessWidget {

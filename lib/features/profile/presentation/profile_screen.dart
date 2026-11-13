@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import '../../../core/providers/scan_providers.dart';
+import '../../../core/services/firebase_services.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -45,12 +46,16 @@ class _ProfileScreenState
   }
 
   Future<void> _saveProfile() async {
-    await _profileBox.put('details', {
+    final details = {
       'name': _nameController.text.trim(),
       'age': age,
       'gender': gender,
       'skin': skin,
-    });
+    };
+    await _profileBox.put('details', details);
+    await FirebaseCloudStore.instance
+        .syncProfile(details)
+        .catchError((_) {});
   }
 
   Future<void> _clearProfile() async {
@@ -77,6 +82,8 @@ class _ProfileScreenState
     if (shouldClear != true) return;
 
     await _profileBox.delete('details');
+    await FirebaseCloudStore.instance
+        .syncProfile({}).catchError((_) {});
     if (!mounted) return;
 
     setState(() {
@@ -118,6 +125,9 @@ class _ProfileScreenState
       await Hive.box('scans').clear();
       await _profileBox.clear();
       await Hive.box('preferences').delete('accepted');
+      await FirebaseCloudStore.instance
+          .clearUserData()
+          .catchError((_) {});
       ref.invalidate(scanHistoryProvider);
 
       if (!mounted) return;
@@ -221,7 +231,7 @@ class _ProfileScreenState
           ),
           const SizedBox(height: 18),
           const Text(
-            'Profile details are optional, encrypted, and stored on this device.',
+            'Profile details are optional. Your account profile syncs with Firebase; screening notes are tied to your account and image files remain on this device.',
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -239,6 +249,19 @@ class _ProfileScreenState
                   Theme.of(context).colorScheme.error,
             ),
           ),
+          if (FirebaseAuthService.instance.currentUser !=
+              null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await FirebaseAuthService.instance
+                    .signOut();
+                if (context.mounted) context.go('/login');
+              },
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign out'),
+            ),
+          ],
         ],
       ),
     );

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "980278311158",
+    "project_id": "skinai-assist",
+    "storage_bucket": "skinai-assist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980278311158:android:a92e58a79d3c48ce3f14d7",
+        "android_client_info": {
+          "package_name": "com.skinaiassist.skinai_assist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAiw0-vGVlFnFVvwED5JV0gPGiOSv-jsc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
