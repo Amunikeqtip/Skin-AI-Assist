@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {
+      "name": "pad-ufes-20",
+      "kind": "pad_ufes",
+      "data_dir": "D:/data/pad-ufes-20"
+    },
+    {
+      "name": "msld-v2-healthy",
+      "kind": "folders",
+      "root": "D:/data/healthy_skin",
+      "grouped": true
+    }
+  ]
+}

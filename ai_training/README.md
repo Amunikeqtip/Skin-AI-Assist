@@ -49,3 +49,11 @@ trained on a limited Brazilian dataset and has not been clinically validated
 for use in Zimbabwe or other populations. It must not be used for diagnosis,
 triage decisions, or treatment recommendations. The Flutter integration should
 continue to identify the app as informational and direct users to a clinician.
+
+## Multimodal research pipeline
+
+`ai_training/multimodal/` prepares a later MobileNetV3 model that can use the
+app's body-area and symptom answers together with the photo. It is not wired
+into the current single-input classifier. Read `ai_training/multimodal/README.md`
+before training it. The shipped app model remains the PAD-UFES-20 prototype
+described above.

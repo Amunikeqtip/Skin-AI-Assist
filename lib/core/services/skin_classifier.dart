@@ -3,13 +3,9 @@ import 'dart:io';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-class SkinClassScore {
-  const SkinClassScore(
-      {required this.label, required this.score});
+import 'class_score.dart';
 
-  final String label;
-  final double score;
-}
+typedef SkinClassScore = ClassScore;
 
 class SkinPrediction {
   const SkinPrediction({required this.scores});

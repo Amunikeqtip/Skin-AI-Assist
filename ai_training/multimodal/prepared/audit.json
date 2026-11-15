@@ -1,0 +1,69 @@
+{
+  "split_method": "patient-or-group",
+  "image_level_split_accepted": false,
+  "healthy_present": false,
+  "metadata_blank_images": 0,
+  "metadata_blank_fraction": 0.0,
+  "drops": {
+    "region_other:SCALP": 18,
+    "region_other:ABDOMEN": 36,
+    "region_other:LIP": 23,
+    "small": 15,
+    "blurry": 4,
+    "duplicate_bytes": 15
+  },
+  "splits": {
+    "train": {
+      "images": 1367,
+      "labels": {
+        "basal_cell_carcinoma": 504,
+        "actinic_keratosis": 454,
+        "nevus": 147,
+        "seborrheic_keratosis": 125,
+        "squamous_cell_carcinoma": 111,
+        "melanoma": 26
+      },
+      "skin_tones": {
+        "FST I-II": 609,
+        "Unknown": 475,
+        "FST III-IV": 277,
+        "FST V-VI": 6
+      }
+    },
+    "val": {
+      "images": 473,
+      "labels": {
+        "basal_cell_carcinoma": 177,
+        "actinic_keratosis": 142,
+        "seborrheic_keratosis": 51,
+        "nevus": 49,
+        "squamous_cell_carcinoma": 40,
+        "melanoma": 14
+      },
+      "skin_tones": {
+        "FST I-II": 211,
+        "Unknown": 156,
+        "FST III-IV": 102,
+        "FST V-VI": 4
+      }
+    },
+    "test": {
+      "images": 424,
+      "labels": {
+        "basal_cell_carcinoma": 154,
+        "actinic_keratosis": 130,
+        "seborrheic_keratosis": 53,
+        "nevus": 39,
+        "squamous_cell_carcinoma": 36,
+        "melanoma": 12
+      },
+      "skin_tones": {
+        "FST I-II": 185,
+        "Unknown": 165,
+        "FST III-IV": 73,
+        "FST V-VI": 1
+      }
+    }
+  },
+  "note": "Skin tone is taken from a dataset field when one exists. It is not estimated from the photo. Unknown means the source had no tone label. Refused labels cannot be established from a photo. Coarse labels such as 'skin cancer' mix different diseases and are left out."
+}

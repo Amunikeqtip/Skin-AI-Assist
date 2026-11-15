@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "name": "fitzpatrick17k-c",
+      "kind": "csv",
+      "metadata": "D:/data/Fitzpatrick17k-C.csv",
+      "image_root": "D:/data/fitzpatrick_images",
+      "label_column": "label",
+      "path_column": "filepath",
+      "tone_column": "fitzpatrick",
+      "partition_column": "partition",
+      "group_column": "md5hash"
+    },
+    {
+      "name": "pad-ufes-20",
+      "kind": "pad_ufes",
+      "data_dir": "D:/data/pad-ufes-20"
+    },
+    {
+      "name": "clinical-folders",
+      "kind": "folders",
+      "root": "D:/data/clinical22",
+      "grouped": false
+    }
+  ]
+}
