@@ -287,7 +287,7 @@ def evaluate_split(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, default=Path("ai_training/multimodal/run"))
+    parser.add_argument("--output-dir", type=Path, default=Path("ai_training/deferred_multimodal/run"))
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--fine-tune-epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)

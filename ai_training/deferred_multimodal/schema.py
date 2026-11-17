@@ -1,6 +1,6 @@
 """Shared label metadata contract for training and the Flutter app.
 
-`lib/core/services/metadata_features.dart` must encode fields in this order.
+The retired Flutter metadata encoder used to encode fields in this order.
 A missing dataset value is unknown. It is not encoded as "no".
 """
 

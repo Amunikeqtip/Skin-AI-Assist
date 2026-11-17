@@ -1,0 +1,34 @@
+{
+  "dataset": "held-out patient groups from PAD-UFES-20 plus MSLD v2.0",
+  "image_count": 517,
+  "positive_skin_images_only": true,
+  "image_resize": "Pillow bilinear, 32x32, approximates Flutter image resize",
+  "skin_fraction_by_source": {
+    "MSLD-v2.0": {
+      "images": 123,
+      "p10": 0.08398437500000003,
+      "median": 0.7119140625
+    },
+    "PAD-UFES-20": {
+      "images": 394,
+      "p10": 0.03623046875000003,
+      "median": 0.82958984375
+    }
+  },
+  "acceptance_rate_by_minimum_skin_fraction": {
+    "0.01": 0.9381044487427466,
+    "0.03": 0.9148936170212766,
+    "0.05": 0.8916827852998066,
+    "0.08": 0.8665377176015474,
+    "0.1": 0.851063829787234
+  },
+  "per_source_acceptance_at_1_percent": {
+    "MSLD-v2.0": 0.943089430894309,
+    "PAD-UFES-20": 0.9365482233502538
+  },
+  "limitations": [
+    "All images in this check are skin photographs; false-accept rate is unknown.",
+    "This is not an image-level validation of skin versus non-skin detection.",
+    "The deployment preprocessing is approximated with Pillow, not Flutter's image package."
+  ]
+}

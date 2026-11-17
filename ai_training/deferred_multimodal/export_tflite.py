@@ -100,7 +100,7 @@ def main() -> None:
                 "type": "float32",
                 "shape": [1, len(names)],
                 "names": names,
-                "encoder": "lib/core/services/metadata_features.dart",
+                "encoder": "retired; not present in the PAD-only app",
             },
         ],
         "output": {"name": "scores", "labels": labels},

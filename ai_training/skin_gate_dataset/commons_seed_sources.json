@@ -1,0 +1,92 @@
+[
+  {
+    "filename": "denim_fabric.jpg",
+    "source_title": "File:Close-up of Denim Fabric.jpg",
+    "author": "Andreiflorea993",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Close-up_of_Denim_Fabric.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/Close-up_of_Denim_Fabric.jpg/1280px-Close-up_of_Denim_Fabric.jpg",
+    "candidate_type": "blue textile close-up"
+  },
+  {
+    "filename": "artificial_wood_grain.jpg",
+    "source_title": "File:Artificial wood grain texture.jpg",
+    "author": "John Harvey",
+    "license": "Public domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Artificial_wood_grain_texture.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Artificial_wood_grain_texture.jpg/1280px-Artificial_wood_grain_texture.jpg",
+    "candidate_type": "warm brown wood texture"
+  },
+  {
+    "filename": "greyhound_closeup.jpg",
+    "source_title": "File:Greyhound Close-up.jpg",
+    "author": "Vincent Eisfeld",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Greyhound_Close-up.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Greyhound_Close-up.jpg/1280px-Greyhound_Close-up.jpg",
+    "candidate_type": "animal fur and face"
+  },
+  {
+    "filename": "orange_fruit.jpg",
+    "source_title": "File:Orange Fruit Close-up.jpg",
+    "author": "freestock.ca",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Orange_Fruit_Close-up.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Orange_Fruit_Close-up.jpg/1280px-Orange_Fruit_Close-up.jpg",
+    "candidate_type": "orange fruit against light background"
+  },
+  {
+    "filename": "orange_pulp.jpg",
+    "source_title": "File:Orange citrus fruit pulp juicy 453452.jpg",
+    "author": "Anja (cocoparisienne)",
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Orange_citrus_fruit_pulp_juicy_453452.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/Orange_citrus_fruit_pulp_juicy_453452.jpg/1280px-Orange_citrus_fruit_pulp_juicy_453452.jpg",
+    "candidate_type": "orange fruit interior macro"
+  },
+  {
+    "filename": "green_leaf.jpg",
+    "source_title": "File:Fragment of green leaf houseplant.jpg",
+    "author": "AlixSaz",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Fragment_of_green_leaf_houseplant.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Fragment_of_green_leaf_houseplant.jpg/1280px-Fragment_of-green_leaf_houseplant.jpg",
+    "candidate_type": "green leaf close-up"
+  },
+  {
+    "filename": "blue_painted_wall.jpg",
+    "source_title": "File:Surfaces wall textured painted blue.JPG",
+    "author": "Tomwsulcer",
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Surfaces_wall_textured_painted_blue.JPG",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Surfaces_wall_textured_painted_blue.JPG/1280px-Surfaces_wall_textured_painted_blue.JPG",
+    "candidate_type": "blue painted wall texture"
+  },
+  {
+    "filename": "red_apples.jpg",
+    "source_title": "File:Picture of Red Apple.jpg",
+    "author": "Nubelbariloe",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Picture_of_Red_Apple.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Picture_of_Red_Apple.jpg/1280px-Picture_of_Red_Apple.jpg",
+    "candidate_type": "red and green apples in market"
+  },
+  {
+    "filename": "computer_keyboard.jpg",
+    "source_title": "File:Computer keyboard placed on a black desk in a modern workspace.jpg",
+    "author": "Shixart1985",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "page_url": "https://commons.wikimedia.org/wiki/File:Computer_keyboard_placed_on_a_black_desk_in_a_modern_workspace.jpg",
+    "thumbnail_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Computer_keyboard_placed_on_a_black_desk_in_a_modern_workspace.jpg/1280px-Computer_keyboard_placed_on_a_black_desk_in_a_modern_workspace.jpg",
+    "candidate_type": "keyboard and desk scene"
+  }
+]

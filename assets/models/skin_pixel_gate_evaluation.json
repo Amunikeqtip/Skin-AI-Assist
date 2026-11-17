@@ -1,0 +1,103 @@
+{
+  "model": "3-layer per-pixel BGR colour classifier",
+  "dataset": "UCI Skin Segmentation (Bhatt and Dhall, 2009)",
+  "license": "CC BY 4.0",
+  "input_order": "BGR normalized to [0, 1]",
+  "split": "random pixel rows; source-image/patient identifiers are unavailable",
+  "instances": 245057,
+  "skin_pixels": 50859,
+  "non_skin_pixels": 194198,
+  "test_pixels": 36759,
+  "pixel_roc_auc": 0.999893397809873,
+  "threshold_reports": {
+    "0.25": {
+      "non_skin": {
+        "precision": 0.9999655659240384,
+        "recall": 0.9969104016477858,
+        "f1-score": 0.9984356466280448,
+        "support": 29130.0
+      },
+      "skin": {
+        "precision": 0.9883389479139674,
+        "recall": 0.9998689212216542,
+        "f1-score": 0.994070502378315,
+        "support": 7629.0
+      },
+      "accuracy": 0.9975244157893305,
+      "macro avg": {
+        "precision": 0.9941522569190029,
+        "recall": 0.99838966143472,
+        "f1-score": 0.9962530745031799,
+        "support": 36759.0
+      },
+      "weighted avg": {
+        "precision": 0.9975525658751025,
+        "recall": 0.9975244157893305,
+        "f1-score": 0.9975297001800678,
+        "support": 36759.0
+      }
+    },
+    "0.5": {
+      "non_skin": {
+        "precision": 0.9999312100158217,
+        "recall": 0.9980089255063508,
+        "f1-score": 0.9989691430142258,
+        "support": 29130.0
+      },
+      "skin": {
+        "precision": 0.9924528301886792,
+        "recall": 0.9997378424433084,
+        "f1-score": 0.9960820164555308,
+        "support": 7629.0
+      },
+      "accuracy": 0.9983677466742839,
+      "macro avg": {
+        "precision": 0.9961920201022505,
+        "recall": 0.9988733839748296,
+        "f1-score": 0.9975255797348783,
+        "support": 36759.0
+      },
+      "weighted avg": {
+        "precision": 0.9983791395106048,
+        "recall": 0.9983677466742839,
+        "f1-score": 0.9983699458511833,
+        "support": 36759.0
+      }
+    },
+    "0.75": {
+      "non_skin": {
+        "precision": 0.9995188838104402,
+        "recall": 0.9984552008238929,
+        "f1-score": 0.9989867591749816,
+        "support": 29130.0
+      },
+      "skin": {
+        "precision": 0.9941253263707572,
+        "recall": 0.998164897103159,
+        "f1-score": 0.9961410164170319,
+        "support": 7629.0
+      },
+      "accuracy": 0.9983949508963791,
+      "macro avg": {
+        "precision": 0.9968221050905988,
+        "recall": 0.9983100489635259,
+        "f1-score": 0.9975638877960067,
+        "support": 36759.0
+      },
+      "weighted avg": {
+        "precision": 0.9983994994499478,
+        "recall": 0.9983949508963791,
+        "f1-score": 0.9983961508477583,
+        "support": 36759.0
+      }
+    }
+  },
+  "limitations": [
+    "This model sees only BGR pixel values and has no spatial context.",
+    "Random pixel splits may share source-image colour distributions.",
+    "Pixel metrics do not validate whole-image skin detection.",
+    "Wood, fabric, lighting, camera white balance, and darker tones may cause errors.",
+    "An image-level skin-fraction threshold requires a separate image-level validation set."
+  ],
+  "tflite_model": "skin_pixel_gate.tflite"
+}

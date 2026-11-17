@@ -12,7 +12,7 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 | Home dashboard and bottom navigation | Illustrated hero, fixed brand header, quick links, recent visit card, and locally saved daily care checklist |
 | Body area and symptom questionnaire | Saves the selected area, answers, and duration as a local visit; no photo is saved to history |
 | Camera capture and photo review | Live camera preview, tap-to-focus/exposure, flash toggle, grid overlay, capture/retake, crop, basic resolution/brightness/blur checks, and best-effort temporary photo cleanup; quality checks are heuristic and are not medical validation |
-| Analysis and results | MobileNetV3-Large runs locally on a reviewed photo and displays uncalibrated class scores; no risk category or care recommendation is assigned |
+| Analysis and results | Image quality checks, an experimental pixel-colour skin gate, and an 8-class MobileNetV3-Large model run locally; scores are uncalibrated and no risk category or care recommendation is assigned |
 | Local storage | Visit metadata and optional profile details are stored in encrypted Hive boxes; onboarding acceptance is stored in a separate local preferences box |
 | History, education, profile | Searchable learning topics with illustrations, history list and details, profile fields in encrypted storage, and local-data clear actions |
 | Account access | Firebase email/password sign-in and account creation, protected app routes, sign-out, and a prototype demo account |
@@ -34,20 +34,28 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 
 ## AI model (educational prototype)
 
-The on-device model is **MobileNetV3-Large trained on PAD-UFES-20**, a
-six-class smartphone-image dataset. It analyzes the reviewed photo locally and
-shows the top three uncalibrated model scores. The photo is temporary and is
-not saved to history. See [`ai_training/README.md`](ai_training/README.md) for
-the patient-grouped training workflow and
-[`assets/models/MODEL_CARD.md`](assets/models/MODEL_CARD.md) for dataset
-attribution, preprocessing, and evaluation details.
+The on-device analysis runs three steps: the existing image-quality checks,
+an experimental UCI pixel-colour gate, then an eight-class MobileNetV3-Large
+classifier trained on PAD-UFES-20 and MSLD v2.0. The classifier returns six
+PAD lesion labels, healthy skin, or an “other” label limited to five infectious
+conditions represented in MSLD. The “other” label does not cover every skin
+disease. The photo is temporary and is not saved to visit history. See
+[`assets/models/MODEL_CARD.md`](assets/models/MODEL_CARD.md) and
+[`assets/models/evaluation.json`](assets/models/evaluation.json) for the data
+and held-out results.
 
-On the patient-held-out test split, this run achieved 65.0% accuracy and a
-0.549 macro-F1. It identified 4/9 melanoma images and 5/32 squamous cell
-carcinoma images. PAD-UFES-20 is small, imbalanced, and drawn from a specific
-population; this result is not reliable for screening and must not be
-presented as a diagnosis, a cancer rule-out, or a substitute for clinical
-review.
+The skin gate is trained on UCI RGB/BGR pixel samples, not full photos. Its
+1% image-pixel cutoff is experimental, and pixel metrics do not tell us how
+often it will reject a real skin photo or accept an object. The disease model
+also has small healthy and melanoma test groups, mixes two dataset sources,
+and is not clinically validated. A low score, healthy output, or “other” output
+does not rule out cancer or replace assessment by a clinician. This prototype
+must not be presented as a reliable cancer-screening service. PAD-UFES-20 and
+MSLD dataset attribution and limitations are documented in the model card.
+
+Older multimodal training experiments are archived under
+[`ai_training/deferred_multimodal`](ai_training/deferred_multimodal) and are
+not used by the app.
 
 Check the local setup:
 
@@ -208,7 +216,7 @@ lib/
     widgets/common.dart            Shared presentation widgets
   features/
     dashboard/presentation/        Home dashboard
-    scan/presentation/              Questionnaire, camera and review flow
+    scan/presentation/              Scan flow plus extracted camera/result widgets
     history/presentation/           Local history screen
     education/presentation/         Educational topics and urgent-care guidance
     profile/presentation/           Optional profile fields

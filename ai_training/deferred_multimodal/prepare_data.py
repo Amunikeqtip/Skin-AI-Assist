@@ -432,7 +432,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sources", type=Path, required=True)
     parser.add_argument("--taxonomy", type=Path, default=Path(__file__).with_name("taxonomy.json"))
-    parser.add_argument("--output-dir", type=Path, default=Path("ai_training/multimodal/prepared"))
+    parser.add_argument("--output-dir", type=Path, default=Path("ai_training/deferred_multimodal/prepared"))
     parser.add_argument("--min-images", type=int, default=9)
     parser.add_argument("--min-side", type=int, default=224)
     parser.add_argument("--min-sharpness", type=float, default=18.0)

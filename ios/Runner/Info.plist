@@ -6,6 +6,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>SkinAI Assist uses the camera to capture a skin image for on-device screening.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SkinAI Assist lets you choose a skin image from your photo library for on-device screening.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

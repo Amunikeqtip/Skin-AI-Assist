@@ -15,14 +15,14 @@ class SkinPrediction {
   SkinClassScore get topMatch => scores.first;
 }
 
-/// Local, experimental PAD-UFES-20 image classification.
+/// Local, experimental PAD-UFES-20 + MSLD image classification.
 ///
 /// Model scores are uncalibrated and must not be treated as diagnosis or risk.
 class SkinClassifier {
   const SkinClassifier();
 
   static const _modelAsset =
-      'assets/models/skinai_mobilenetv3_pad_ufes20.tflite';
+      'assets/models/skinai_pad_msld_8class.tflite';
   static const _labels = [
     'Actinic keratosis (ACK)',
     'Basal cell carcinoma (BCC)',
@@ -30,6 +30,8 @@ class SkinClassifier {
     'Nevus (NEV)',
     'Squamous cell carcinoma (SCC)',
     'Seborrheic keratosis (SEK)',
+    'Healthy skin (MSLD)',
+    'Other skin condition (MSLD classes)',
   ];
   static const _inputSize = 224;
 

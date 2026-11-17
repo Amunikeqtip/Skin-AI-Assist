@@ -11,3 +11,5 @@ android/.kotlin/
 .idea/
 *.iml
 .DS_Store
+__pycache__/
+*.py[cod]

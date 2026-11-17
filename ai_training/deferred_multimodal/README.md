@@ -1,4 +1,9 @@
-# Multimodal training pipeline
+# Deferred multimodal training experiments
+
+This directory is archived and is **not part of the active app architecture**.
+The current prototype is PAD-UFES-only and uses the one-image MobileNetV3 TFLite
+model in `assets/models/`. Do not train or export this pipeline as a replacement
+for that model until multimodal work is explicitly resumed.
 
 Educational research pipeline for SkinAI Assist. It does not diagnose, rule out
 disease, or replace the six-class PAD-UFES model already in the app.
@@ -24,9 +29,8 @@ encoded as unknown, not as "no".
    saved with `validated: false`. The test split is scored once after that
    temperature is frozen.
 5. `export_tflite.py` writes an FP16-weight TFLite file with two inputs. The
-   Flutter encoder is `lib/core/services/metadata_features.dart`. The current
-   scan classifier sends one image input, so do not replace that file with this
-   export until the scan flow passes metadata as the second input.
+   app no longer contains the metadata encoder or multimodal runtime adapter.
+   This export is not compatible with the PAD-only scan flow.
 
 EfficientNet-Lite0 is not the default. The app, the preprocessing, and the
 existing trainers use MobileNetV3-Large.
@@ -35,9 +39,9 @@ existing trainers use MobileNetV3-Large.
 
 ```powershell
 python -m pip install tensorflow==2.20.0 pandas scikit-learn numpy pillow
-python ai_training/multimodal/prepare_data.py --sources ai_training/multimodal/sources.example.json --output-dir ai_training/multimodal/prepared
-python ai_training/multimodal/train_pipeline.py --manifest ai_training/multimodal/prepared/manifest.jsonl --output-dir ai_training/multimodal/run
-python ai_training/multimodal/export_tflite.py --model-dir ai_training/multimodal/run
+python ai_training/deferred_multimodal/prepare_data.py --sources ai_training/deferred_multimodal/sources.example.json --output-dir ai_training/deferred_multimodal/prepared
+python ai_training/deferred_multimodal/train_pipeline.py --manifest ai_training/deferred_multimodal/prepared/manifest.jsonl --output-dir ai_training/deferred_multimodal/run
+python ai_training/deferred_multimodal/export_tflite.py --model-dir ai_training/deferred_multimodal/run
 ```
 
 Edit `sources.example.json` so the paths point at datasets you already have
