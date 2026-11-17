@@ -14,6 +14,8 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
+from screening_metrics import cancer_referral_report
+
 IMAGE_SIZE = (224, 224)
 SEED = 42
 CLASS_NAMES = [
@@ -218,7 +220,7 @@ def main() -> None:
     )
     evaluation = {
         "architecture": "MobileNetV3-Large image-only",
-        "datasets": ["PAD-UFES-20", "MSLD v2.0"],
+        "datasets": sorted(frame["source"].unique().tolist()),
         "msld_license": "CC BY-NC 4.0; non-commercial use only",
         "class_names": CLASS_NAMES,
         "other_class_scope": ["MKP", "CHP", "MSL", "CWP", "HFMD"],
@@ -234,6 +236,19 @@ def main() -> None:
         "test_confusion_matrix": confusion_matrix(
             truth, predictions, labels=list(range(len(CLASS_NAMES)))
         ).tolist(),
+        "test_missed_cancers": cancer_referral_report(truth, predictions, CLASS_NAMES),
+        "test_by_source": {
+            source: {
+                "images": int(mask.sum()),
+                "accuracy": float(np.mean(predictions[mask] == truth[mask])),
+                "macro_f1_over_present_labels": float(
+                    f1_score(truth[mask], predictions[mask], average="macro", zero_division=0)
+                ),
+                "missed_cancers": cancer_referral_report(truth[mask], predictions[mask], CLASS_NAMES)["all_cancers"],
+            }
+            for source in sorted(test["source"].unique())
+            for mask in [test["source"].to_numpy() == source]
+        },
         "limitations": [
             "HEALTHY has only 114 MSLD source images before splitting.",
             "OTHER_SKIN_CONDITION covers only five MSLD infectious conditions, not all other diseases.",

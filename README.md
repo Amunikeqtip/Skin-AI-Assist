@@ -1,6 +1,6 @@
 # SkinAI Assist
 
-SkinAI Assist is a Flutter mobile app prototype for educational skin screening. It is **not a medical diagnostic tool**. Its experimental AI output is for demonstrating on-device inference only; do not use it to diagnose or make treatment decisions.
+SkinAI Assist is a Flutter mobile app prototype for educational skin screening. It is **not a medical diagnostic tool**. Its experimental AI output is for demonstrating cloud vision inference only; do not use it to diagnose or make treatment decisions.
 
 ## Current implementation
 
@@ -10,17 +10,17 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 | Branded startup | Native splash uses the supplied logo; a Flutter loading indicator appears while encrypted storage opens, with retry on failure |
 | First-run disclaimer and three-step onboarding | Implemented; acceptance is stored in local preferences |
 | Home dashboard and bottom navigation | Illustrated hero, fixed brand header, quick links, recent visit card, and locally saved daily care checklist |
-| Body area and symptom questionnaire | Saves the selected area, answers, and duration as a local visit; no photo is saved to history |
+| Body area and symptom questionnaire | Includes a custom body-part field when “Other” is selected; saves the selected area, answers, and duration as a local visit; no photo is saved to history |
 | Camera capture and photo review | Live camera preview, tap-to-focus/exposure, flash toggle, grid overlay, capture/retake, crop, basic resolution/brightness/blur checks, and best-effort temporary photo cleanup; quality checks are heuristic and are not medical validation |
-| Analysis and results | Image quality checks, an experimental pixel-colour skin gate, and an 8-class MobileNetV3-Large model run locally; scores are uncalibrated and no risk category or care recommendation is assigned |
+| Analysis and results | Local image-quality checks followed by a direct Groq Qwen vision request; the photo is sent to Groq and is not stored in Firebase or visit history; returned scores are uncalibrated visual-match estimates |
 | Local storage | Visit metadata and optional profile details are stored in encrypted Hive boxes; onboarding acceptance is stored in a separate local preferences box |
 | History, education, profile | Searchable learning topics with illustrations, history list and details, profile fields in encrypted storage, and local-data clear actions |
 | Account access | Firebase email/password sign-in and account creation, protected app routes, sign-out, and a prototype demo account |
 | Cloud account data | Firestore sync for profile details, care-routine preferences, and scan metadata; scan images remain on device |
 | Emergency advice | Dedicated urgent-care screen linked from Home and Education; includes source references and location-neutral emergency wording |
 | Riverpod | Used for encrypted scan-history state and persistence; camera capture remains widget-local state |
-| TensorFlow Lite | PAD-UFES-20 MobileNetV3-Large model and local Flutter inference adapter are included in `assets/models/` and `lib/core/services/skin_classifier.dart` |
-| Firebase | Authentication and Firestore integration added; connect a Firebase project using the setup below |
+| Groq vision | `qwen/qwen3.8-27b` considers the scan photo and questionnaire answers, then suggests up to five candidates with independent uncalibrated 0–100 visual-match scores; it may name conditions outside the PAD-UFES-20 and MSLD v2.0 reference labels |
+| Firebase | Authentication and Firestore are used for account data; scan inference calls Groq directly from the app |
 | Automated tests | A few starter tests exist; feature and platform coverage is incomplete |
 
 ## Requirements
@@ -31,27 +31,33 @@ SkinAI Assist is a Flutter mobile app prototype for educational skin screening. 
 - For iOS: a Mac running a supported version of Xcode. iOS builds and the iOS Simulator cannot be run from Windows.
 - A physical device or emulator/simulator for running the app.
 - A Firebase project with Email/Password Authentication and Cloud Firestore enabled.
+- A GroqCloud account and API key for the vision model.
 
 ## AI model (educational prototype)
 
-The on-device analysis runs three steps: the existing image-quality checks,
-an experimental UCI pixel-colour gate, then an eight-class MobileNetV3-Large
-classifier trained on PAD-UFES-20 and MSLD v2.0. The classifier returns six
-PAD lesion labels, healthy skin, or an “other” label limited to five infectious
-conditions represented in MSLD. The “other” label does not cover every skin
-disease. The photo is temporary and is not saved to visit history. See
-[`assets/models/MODEL_CARD.md`](assets/models/MODEL_CARD.md) and
-[`assets/models/evaluation.json`](assets/models/evaluation.json) for the data
-and held-out results.
+The active scan flow runs local image-quality checks, then sends a compressed
+photo and the selected body area, symptom answers, and duration directly from
+the app to Groq's `qwen/qwen3.8-27b` vision model. The general vision model is
+prompted to suggest up to five candidates, including labels from PAD-UFES-20
+and MSLD v2.0 and possible conditions outside those datasets. It was not trained
+specifically on those datasets or on every skin condition. Its independent
+0–100 match scores are not calibrated probabilities, and Groq is not a
+validated dermatology classifier. A data-use notice appears on the photo-review
+screen before analysis.
+The app does not store the image in Firebase or visit history; Groq's inference
+data controls are described in its [data policy](https://console.groq.com/docs/your-data).
+For this prototype, `GROQ_API_KEY` is passed with `--dart-define`; it becomes
+part of the app binary and must only be used in a private demo build. Anyone
+with a distributed APK may be able to extract and use the key. Use a backend
+proxy for any APK shared outside your own devices.
 
-The skin gate is trained on UCI RGB/BGR pixel samples, not full photos. Its
-1% image-pixel cutoff is experimental, and pixel metrics do not tell us how
-often it will reject a real skin photo or accept an object. The disease model
-also has small healthy and melanoma test groups, mixes two dataset sources,
-and is not clinically validated. A low score, healthy output, or “other” output
-does not rule out cancer or replace assessment by a clinician. This prototype
-must not be presented as a reliable cancer-screening service. PAD-UFES-20 and
-MSLD dataset attribution and limitations are documented in the model card.
+No dedicated skin/no-skin gate runs in the active scan flow. Image quality
+checks do not verify that skin or the selected body area is present. The old
+local PAD/MSLD model and UCI pixel gate have been removed from the mobile
+runtime; their model and evaluation artifacts remain in the repository for
+historical research only. Their small or unbalanced datasets and weak cancer
+recall do not support real screening. A low score or healthy-looking result
+cannot rule out cancer or replace care from a clinician.
 
 Older multimodal training experiments are archived under
 [`ai_training/deferred_multimodal`](ai_training/deferred_multimodal) and are
@@ -76,13 +82,15 @@ flutter doctor -v
    ```
 
 4. Select a connected device using **Flutter: Select Device** in the Command Palette, or use `flutter devices` in the terminal.
-5. Press **F5** to debug `lib/main.dart`, or run `flutter run` in the terminal.
+5. Press **F5** and choose **SkinAI Assist (direct Groq prototype)** to enter
+   the Groq token securely in a prompt, or use the command in the Groq setup
+   section below.
 
 The first Android build downloads Gradle and Android dependencies and can take several minutes.
 
 ## Firebase setup (required for account features)
 
-The app now uses Firebase Authentication for sign-in/sign-up. Firestore stores each user's profile, care-routine preferences, and scan metadata under that user's UID. **Scan images are not uploaded.** Local Hive storage remains as an offline cache. Firestore security rules are in [`firestore.rules`](firestore.rules).
+The app uses Firebase Authentication for sign-in/sign-up. Firestore stores each user's profile, care-routine preferences, and scan metadata under that user's UID. Scan images are **not written to Firebase Storage, Firestore, or visit history**. With explicit confirmation, a compressed copy is sent directly from the app to Groq for analysis. Local Hive storage remains as an offline cache. Firestore security rules are in [`firestore.rules`](firestore.rules).
 
 1. Create a Firebase project in the Firebase Console.
 2. Add an Android app with package name `com.skinaiassist.skinai_assist`, and an iOS app with bundle ID `com.skinaiassist.skinaiAssist`.
@@ -102,6 +110,41 @@ The repository also supports runtime Firebase options through `--dart-define` (`
 The **Try demo account** button uses `demo@skinai.app` with password `SkinAI123!`. On first use, the app creates this account in the connected Firebase project; later uses sign into it. These credentials are deliberately public for presentations. Do not use this demo account for real user data, and remove the demo shortcut before any public release.
 
 If Firebase has not been configured for the target platform, the app still opens, but sign-in and account creation show that Firebase setup is required.
+
+## Groq image analysis setup (private prototype build)
+
+1. Create a Groq API key at [GroqCloud API Keys](https://console.groq.com/keys).
+   The label you give it in Groq (for example, `SKIN AI`) is only its name; use
+   the actual secret token shown by Groq.
+2. Open this repository in VS Code and open **Terminal → New Terminal**.
+3. Start the app with the key supplied at build time:
+
+   ```powershell
+   flutter run --dart-define=GROQ_API_KEY=gsk_REPLACE_WITH_YOUR_TOKEN
+   ```
+
+   Replace the example value with your actual Groq token. Do not put the token
+   in Dart source or commit it to Git. Because `--dart-define` is compiled
+   into the app, this direct method is for a private prototype only; do not
+   distribute that APK. A backend proxy is needed to protect the key in a
+   shared or public build.
+
+4. To build an APK for your own phone, pass the same define:
+
+   ```powershell
+   flutter build apk --release --dart-define=GROQ_API_KEY=gsk_REPLACE_WITH_YOUR_TOKEN
+   ```
+
+5. Sign in, choose the body area, answer the symptom and duration questions,
+   select or capture a photo, accept the disclosure, and run the scan. The
+   phone must be online. Groq usage is subject to your account limits and
+   terms. Inference requests are not retained by default, but may be
+   temporarily logged for reliability or abuse investigation. See
+   [Groq data controls](https://console.groq.com/docs/your-data).
+
+The included VS Code launch configuration prompts for the token each time and
+does not save it in the repository. The token is still compiled into the
+running app, so use this configuration only for a private prototype.
 
 ## Android setup and run
 
@@ -222,7 +265,7 @@ lib/
     profile/presentation/           Optional profile fields
 assets/
   images/skinai_logo.png
-  models/                           MobileNetV3 TFLite model, labels, and model card
+  models/                           Archived MobileNetV3 TFLite research artifacts (not bundled)
 android/                            Android Gradle project, manifest, icons and splash
 ios/                                Xcode project, permissions, icons and launch screen
 ```
@@ -233,14 +276,17 @@ flowchart TD
   Screens --> Providers[Riverpod scan-history state]
   Providers --> ScanStore[Encrypted Hive scan box]
   ScanStore --> Key[Key stored in platform secure storage]
-  Model[Experimental on-device TFLite classifier] --> Screens
+  Photo[Temporary compressed photo] --> Groq[Groq Qwen vision model]
+  Groq --> Scores[Uncalibrated visual-match scores]
+  Scores --> Screens
 ```
 
 ## Privacy and safety
 
-- The app does not upload images. Captured images stay in local temporary storage during a scan and are not saved as scan records; temporary captured/cropped files are removed when the scan ends or is abandoned (best effort).
+- The app asks before cloud analysis. If the user continues, a compressed photo is sent over TLS directly to Groq. The app does not write the photo to Firebase Storage, Firestore, or scan history; temporary local captured/cropped files are removed when the scan ends or is abandoned (best effort).
+- Groq says inference requests are not retained by default, but may be temporarily logged for reliability or abuse investigation, for up to 30 days. Review Groq's current [data controls](https://console.groq.com/docs/your-data) before using identifiable or sensitive images.
 - Startup creates encrypted Hive boxes for scan records and profile details and stores their encryption key using platform secure storage. The onboarding acceptance flag is kept in a separate, non-encrypted local preferences box.
-- Do not add image upload without explicit user choice, secure transport, and a privacy review. Never put API keys or signing credentials in source control.
+- The direct prototype build embeds the Groq key, so use it only on your own devices and revoke it after the demo. Never commit the key to source control. Use a backend proxy before sharing the app.
 - The disclaimer and educational information do not replace a clinician. Do not display unvalidated model output as medical certainty.
 
 ## Remaining work from the project brief

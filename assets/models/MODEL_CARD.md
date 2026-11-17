@@ -1,4 +1,8 @@
-# SkinAI Assist staged-model prototype
+# Archived SkinAI Assist on-device model evaluation
+
+> Historical training artifact only. The active app scan flow now uses the
+> Groq vision model through Firebase Cloud Functions. These TFLite models are
+> no longer loaded or bundled in the mobile app.
 
 ## Purpose and scope
 
@@ -6,9 +10,9 @@ This is a non-clinical, educational prototype. It is not validated for cancer
 screening, diagnosis, triage, or treatment decisions. It must not be used to
 rule out cancer or delay clinical assessment.
 
-The app runs image-quality checks, then a provisional skin-colour pixel gate,
-then an eight-class image classifier. The skin gate and disease classifier
-have different training data and limitations.
+This card describes the former local image-quality, pixel-gate, and
+eight-class-classifier pipeline. It is retained to document the previous
+experiment and its limitations; it does not describe current app behavior.
 
 ## Stage 1: skin-colour pixel gate
 
@@ -61,27 +65,46 @@ test split. Per-class recall and test support:
 | Healthy (MSLD) | 82.4% | 17 |
 | Other MSLD conditions | 86.8% | 106 |
 
+Missed cancers on the same test split (BCC, MEL, and SCC photos grouped by the
+kind of label the model gave them):
+
+| True class | Photos | Cancer label | ACK label | Non-cancer label |
+| --- | ---: | ---: | ---: | ---: |
+| BCC | 178 | 140 | 27 | 11 |
+| MEL | 9 | 4 | 0 | 5 |
+| SCC | 32 | 25 | 4 | 3 |
+| All cancers | 219 | 169 | 31 | 19 |
+
+"Non-cancer label" means NEV, SEK, healthy, or other MSLD condition. By source,
+test accuracy is 60.4% on the 394 PAD-UFES-20 photos and 86.2% on the 123 MSLD
+photos, so the overall figure is lifted by the easier MSLD classes.
+
 The cancer-class recall remains weak, and the melanoma test group is very
 small. Overall accuracy must not hide those misses. The results do not support
 reliable screening; concerning lesions still require a qualified clinician.
 
 ## Runtime interpretation
 
-The disease model always produces one of its eight labels after the skin gate
-passes. It has no calibrated refusal/uncertainty class. The pixel gate only
+The archived disease model always produced one of its eight labels after the
+skin gate passed. It could show an "uncertain" result, but only when
+`uncertainty_policy.json` is present in `assets/models/`, is marked validated,
+and names this model file. That policy's temperature and confidence cutoff must
+be chosen on the validation split only and frozen before the test split is
+scored (`ai_training/evaluate_screening_model.py`). An uncertain result is not
+reassuring. The pixel gate only
 estimates colour prevalence. Neither gate has a validated whole-image
 false-positive rate. The app shows uncalibrated model scores; they are not
 medical probabilities.
 
-The previous six-class PAD-only artifact and its evaluation are retained as
+The six-class PAD-only artifact and its evaluation are retained as
 `skinai_mobilenetv3_pad_ufes20.tflite`, `pad_ufes_only_evaluation.json`, and
-`PAD_UFES_ONLY_MODEL_CARD.md` for comparison. The active app uses
-`skinai_pad_msld_8class.tflite` and `skin_pixel_gate.tflite`.
+`PAD_UFES_ONLY_MODEL_CARD.md` for comparison. The eight-class classifier and
+pixel gate files listed here are archived and no longer used by the app.
 
 ## Reproduction
 
 Training and evaluation scripts are in `ai_training/`. See its README for the
-dataset preparation commands and required attribution. The current gate
-threshold and both models need validation on representative full phone photos,
-including non-skin objects and a substantially broader healthy-skin sample,
-before they can be described as reliable.
+dataset preparation commands and required attribution. The archived gate
+threshold and both local models were not validated on a representative mix of
+phone photos, non-skin objects, and healthy skin, so they should not be
+described as reliable.

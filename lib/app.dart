@@ -55,7 +55,10 @@ final _router = GoRouter(
             builder: (_, __) => const HistoryScreen()),
         GoRoute(
             path: '/learn',
-            builder: (_, __) => const EducationScreen()),
+            builder: (_, state) => EducationScreen(
+                  initialTopic:
+                      state.uri.queryParameters['topic'],
+                )),
         GoRoute(
             path: '/profile',
             builder: (_, __) => const ProfileScreen()),

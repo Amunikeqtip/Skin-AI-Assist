@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "groqApiKey",
+      "type": "promptString",
+      "description": "Groq API token for private prototype run",
+      "password": true
+    }
+  ],
+  "configurations": [
+    {
+      "name": "SkinAI Assist (direct Groq prototype)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define=GROQ_API_KEY=${input:groqApiKey}"
+      ]
+    }
+  ]
+}

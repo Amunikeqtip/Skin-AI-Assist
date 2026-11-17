@@ -215,6 +215,7 @@ class FirebaseCloudStore {
       await Hive.box('scans').clear();
       await profile.delete('details');
       await preferences.delete('daily_care_routine');
+      await preferences.delete('follow_up_reminder_at');
     }
     await preferences.put('firebase_active_user', user.uid);
     final existing = await userDocument.get();
@@ -238,6 +239,15 @@ class FirebaseCloudStore {
           cloudPreferences['daily_care_routine'],
         );
       }
+      if (!preferences
+              .containsKey('follow_up_reminder_at') &&
+          cloudPreferences['follow_up_reminder_at']
+              is String) {
+        await preferences.put(
+          'follow_up_reminder_at',
+          cloudPreferences['follow_up_reminder_at'],
+        );
+      }
     }
     await userDocument.set({
       'profile': _safeMap(profile.get('details')),
@@ -247,6 +257,8 @@ class FirebaseCloudStore {
         'daily_care_routine': _safeMap(
           preferences.get('daily_care_routine'),
         ),
+        'follow_up_reminder_at':
+            preferences.get('follow_up_reminder_at'),
       },
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));

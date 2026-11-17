@@ -10,12 +10,11 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/providers/scan_providers.dart';
 import '../../../core/services/image_quality_checker.dart';
-import '../../../core/services/pad_analysis_service.dart';
-import '../../../core/services/skin_pixel_gate.dart';
-import '../../../core/services/skin_classifier.dart';
+import '../../../core/services/groq_analysis_service.dart';
+import '../../../core/services/groq_skin_classifier.dart';
 import '../../../core/services/scan_store.dart';
 import '../../../core/widgets/common.dart';
-import 'widgets/pad_analysis_result_panel.dart';
+import 'widgets/skin_ai_analysis_result_panel.dart';
 import 'widgets/scan_camera_preview.dart';
 
 class ScanFlow extends ConsumerStatefulWidget {
@@ -27,11 +26,12 @@ class ScanFlow extends ConsumerStatefulWidget {
 
 class _ScanFlowState extends ConsumerState<ScanFlow> {
   final _qualityChecker = const ImageQualityChecker();
-  final _analysisService = const PadAnalysisService();
+  final _analysisService = const GroqAnalysisService();
   final _imagePicker = ImagePicker();
   CameraController? _camera;
   XFile? image;
   ImageQualityReport? _qualityReport;
+  final _otherBodyAreaController = TextEditingController();
   String? area;
   String duration = 'Less than a week';
   bool itch = false;
@@ -54,10 +54,15 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
   final Set<String> _temporaryImagePaths = {};
   int step = 0;
 
+  String get _selectedBodyArea => area == 'Other'
+      ? _otherBodyAreaController.text.trim()
+      : area ?? 'Other';
+
   @override
   void dispose() {
     _focusTimer?.cancel();
     _camera?.dispose();
+    _otherBodyAreaController.dispose();
     unawaited(_cleanupTemporaryPhotos());
     super.dispose();
   }
@@ -348,6 +353,12 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
       _showMessage('Choose a body area to continue.');
       return;
     }
+    if (step == 0 &&
+        area == 'Other' &&
+        _otherBodyAreaController.text.trim().isEmpty) {
+      _showMessage('Enter the body part to continue.');
+      return;
+    }
     if (step == 2 && image == null) {
       _showMessage('Capture a photo before continuing.');
       return;
@@ -396,6 +407,14 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
     try {
       final prediction = await _analysisService.analyze(
         File(selectedImage.path),
+        bodyArea: _selectedBodyArea,
+        duration: duration,
+        symptoms: {
+          'itching': itch,
+          'pain': pain,
+          'swelling': swelling,
+          'recentChange': changed,
+        },
         onStage: (stage) {
           if (mounted) {
             setState(() => _analysisStage = stage);
@@ -404,19 +423,12 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
       );
       if (!mounted) return;
       setState(() => _prediction = prediction);
-    } on NoSkinDetectedException {
-      if (!mounted) return;
-      setState(() {
-        _analysisStage = 'failed';
-        _analysisError =
-            'The experimental skin gate did not find enough skin-coloured pixels. Use a closer photo of the selected area, or retake it in even lighting.';
-      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _analysisStage = 'failed';
         _analysisError =
-            'The skin check or PAD model could not analyze this photo on this device. You can still save the visit without an AI result.';
+            'SkinAI Assist could not complete the analysis. Check your internet connection and confirm the app has been started with a valid analysis key. You can still save the visit without an AI result.';
       });
     } finally {
       if (mounted) {
@@ -428,6 +440,14 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
         });
       }
     }
+  }
+
+  Future<void> _retryAnalysis() async {
+    final selectedImage = image;
+    if (selectedImage == null || _isAnalyzing || _saving)
+      return;
+
+    await _analyzePhoto(selectedImage);
   }
 
   void _showMessage(String message) {
@@ -443,7 +463,9 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
       await ref.read(scanHistoryProvider.notifier).save(
             ScanRecord(
               date: DateTime.now(),
-              area: area ?? 'Not specified',
+              area: area == null
+                  ? 'Not specified'
+                  : _selectedBodyArea,
               symptoms: {
                 'Itching': itch,
                 'Pain': pain,
@@ -451,8 +473,15 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
                 'Recent change': changed,
               },
               duration: duration,
-              prediction: _prediction?.topMatch.label,
-              confidence: _prediction?.topMatch.score,
+              prediction: _prediction == null
+                  ? null
+                  : _prediction!.isUncertain
+                      ? 'Uncertain or unrecognized'
+                      : _prediction!.isNonSkin
+                          ? 'Likely non-skin image'
+                          : _prediction!
+                              .topMatch.conditionName,
+              confidence: null,
               risk: _prediction == null
                   ? null
                   : 'Not assessed',
@@ -550,6 +579,20 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
               ),
           ],
         ),
+        if (area == 'Other') ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _otherBodyAreaController,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Enter the body part',
+              hintText: 'For example, scalp or abdomen',
+              prefixIcon:
+                  Icon(Icons.edit_location_alt_outlined),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -705,6 +748,16 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
           const SizedBox(height: 12),
           _buildQualityMessage(),
         ],
+        const SizedBox(height: 12),
+        const Card(
+          child: ListTile(
+            leading: Icon(Icons.cloud_outlined),
+            title: Text('SkinAI Assist analysis'),
+            subtitle: Text(
+              'When you continue, SkinAI Assist sends the compressed photo and your questionnaire answers for analysis. The app does not save the photo to Firebase or scan history. Results are experimental and are not a diagnosis.',
+            ),
+          ),
+        ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _isCheckingQuality ? null : _cropPhoto,
@@ -765,14 +818,23 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
   }
 
   Widget _buildSaveStep(BuildContext context) {
-    return PadAnalysisResultPanel(
+    return SkinAiAnalysisResultPanel(
       prediction: _prediction,
       isAnalyzing: _isAnalyzing,
       analysisError: _analysisError,
       analysisStage: _analysisStage,
       imagePath: image?.path,
+      bodyArea: _selectedBodyArea,
+      duration: duration,
+      symptoms: {
+        'itching': itch,
+        'pain': pain,
+        'swelling': swelling,
+        'recentChange': changed,
+      },
       isSaving: _saving,
       onSave: _saveVisit,
+      onRetry: _retryAnalysis,
     );
   }
 

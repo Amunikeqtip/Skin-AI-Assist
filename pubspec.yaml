@@ -11,7 +11,6 @@ dependencies:
   go_router: ^14.8.1
   hive_ce: ^2.10.1
   hive_ce_flutter: ^2.2.0
-  tflite_flutter: ^0.11.0
   flutter_secure_storage: ^9.2.4
   google_fonts: ^6.2.1
   uuid: ^4.5.1
@@ -23,6 +22,11 @@ dependencies:
   firebase_auth: ^7.0.1
   cloud_firestore: ^7.1.0
   image_picker: ^1.2.4
+  http: ^1.6.0
+  url_launcher: ^6.3.3
+  flutter_local_notifications: ^19.5.0
+  flutter_timezone: ^5.1.1
+  timezone: ^0.10.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -34,4 +38,3 @@ flutter:
     - assets/images/skinai_logo.png
     - assets/images/skin_care_hero.png
     - assets/images/sun_safety.png
-    - assets/models/

@@ -1,6 +1,10 @@
-# Skin-gate and PAD screening model training
+# Archived local skin-gate and PAD model training
 
-The app analysis has two gates after the existing image-quality check:
+> These training scripts and TFLite models document earlier experiments. The
+> current app scan path does not load these models; it calls Groq through an
+> authenticated Firebase Function. See the repository README for cloud setup.
+
+The former local-model experiment had two stages after image-quality checks:
 
 1. A small UCI BGR pixel classifier estimates how much of a photo looks like
    skin. It is an experimental color gate, not a spatial image model.
@@ -52,7 +56,7 @@ prediction rules out cancer.
 
 ## Prototype status
 
-The exported model is an educational prototype, not a medical device. It is
+The exported local model is an educational prototype, not a medical device. It is
 trained on a limited Brazilian dataset and has not been clinically validated
 for use in Zimbabwe or other populations. It must not be used for diagnosis,
 triage decisions, or treatment recommendations. The Flutter integration should
@@ -75,6 +79,47 @@ Review `audit.json` and `evaluation.json` before copying model artifacts into
 `assets/models/`. Report per-class recall and macro-F1 with test support. The
 healthy and melanoma classes are small, and neither model is clinically
 validated. A missed or low-confidence output does not rule out cancer.
+
+`evaluation.json` also reports `test_missed_cancers` (how many BCC, MEL, and
+SCC test photos received a cancer, ACK, or non-cancer label) and
+`test_by_source`. Report the missed-cancer counts next to accuracy.
+
+### Uncertain results (validation-only cutoff)
+
+```powershell
+cd ai_training
+python evaluate_screening_model.py sweep --manifest D:/data/skinai-screening/manifest.jsonl --model D:/data/skinai-screening/model_run/skinai_pad_msld_8class.keras --output-dir D:/data/skinai-screening/uncertainty
+python evaluate_screening_model.py freeze --minimum-confidence 0.60 --manifest D:/data/skinai-screening/manifest.jsonl --model D:/data/skinai-screening/model_run/skinai_pad_msld_8class.keras --output-dir D:/data/skinai-screening/uncertainty
+```
+
+`sweep` fits a temperature and tabulates coverage, accuracy, and missed cancers
+for each cutoff on the validation split only. Pick one cutoff from that table,
+then run `freeze` once; it refuses to overwrite an existing policy. The value
+0.60 above is only an example. Copy the frozen `uncertainty_policy.json` into
+`assets/models/` only together with the model it was frozen for. A retrained
+model needs its own sweep and freeze. `report` scores the test split by source
+with no cutoff, for comparing two models on the same photos.
+
+### Adding MILK10k clinical close-ups
+
+MILK10k (ISIC, CC BY-NC 4.0, doi:10.34970/648456) adds histopathology-confirmed
+clinical close-ups of BCC, melanoma, and SCC plus ACK, nevus, and seborrheic
+keratosis. Cite: "MILK study team. MILK10k. ISIC Archive, 2025,
+doi:10.34970/648456." Download `milk10k.zip`, `milk10k.csv`, and the
+`supplements/*.csv` files from the ISIC DOI page into one folder. Do not use the
+separate MILK10k Benchmark set.
+
+```powershell
+cd ai_training
+python add_milk10k.py --base-manifest D:/data/skinai-screening/manifest.jsonl --milk-dir D:/data/milk10k --output-dir D:/data/skinai-milk
+python train_pad_screening.py --manifest D:/data/skinai-milk/manifest.jsonl --output-dir D:/data/skinai-milk/model_run
+```
+
+The PAD-UFES-20 and MSLD splits are kept unchanged, so the PAD and MSLD rows of
+`test_by_source` compare directly with the earlier model. MILK10k has no
+patient IDs, so it is split by lesion; two lesions from one patient can land
+in different splits. Its `skin_tone_class` (0 darkest to 5 lightest) is not
+Fitzpatrick type.
 
 The pixel gate uses a provisional 1% skin-colour-pixel cutoff. The optional
 `evaluate_skin_gate_images.py` check measures only the acceptance rate on PAD

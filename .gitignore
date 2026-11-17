@@ -13,3 +13,6 @@ android/.kotlin/
 .DS_Store
 __pycache__/
 *.py[cod]
+.firebase/
+firebase-debug.log
+firebase-debug.*.log

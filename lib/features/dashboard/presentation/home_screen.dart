@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart'
+    show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/providers/scan_providers.dart';
 import '../../../core/services/firebase_services.dart';
+import '../../../core/services/follow_up_reminder_service.dart';
 import '../../../core/widgets/common.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -31,16 +35,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ),
   ];
 
+  static const _dailyTips = [
+    (
+      title: 'Sun protection',
+      message:
+          'Shade, sun-protective clothing, and sunscreen can all help reduce UV exposure outdoors.',
+    ),
+    (
+      title: 'How to check your skin',
+      message:
+          'A regular look over your skin can help you notice a new or changing spot to discuss with a professional.',
+    ),
+    (
+      title: 'Dry skin and moisturizers',
+      message:
+          'Moisturizers, also called emollients, can help keep moisture in the skin.',
+    ),
+    (
+      title: 'Acne',
+      message:
+          'Gentle cleansing is preferable to harsh scrubbing, which can irritate skin.',
+    ),
+  ];
+
   final Set<int> _completed = {};
   late final Box _preferences;
+  late final ValueListenable<Box> _preferencesListenable;
   late String _routineDate;
+  DateTime? _followUpReminderAt;
 
   @override
   void initState() {
     super.initState();
     _preferences = Hive.box('preferences');
+    _preferencesListenable = _preferences.listenable(
+      keys: const ['follow_up_reminder_at'],
+    )..addListener(_refreshFollowUpReminder);
     _routineDate = _todayKey;
     _loadRoutine();
+    _loadFollowUpReminder();
+  }
+
+  @override
+  void dispose() {
+    _preferencesListenable.removeListener(
+      _refreshFollowUpReminder,
+    );
+    super.dispose();
   }
 
   String get _todayKey =>
@@ -59,6 +100,135 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             index >= 0 && index < _routineItems.length),
       );
     }
+  }
+
+  void _loadFollowUpReminder() {
+    final saved = _preferences.get('follow_up_reminder_at');
+    if (saved is String) {
+      _followUpReminderAt = DateTime.tryParse(saved);
+    }
+  }
+
+  void _refreshFollowUpReminder() {
+    final saved = _preferences.get('follow_up_reminder_at');
+    final reminderAt =
+        saved is String ? DateTime.tryParse(saved) : null;
+    if (reminderAt == _followUpReminderAt || !mounted)
+      return;
+    setState(() => _followUpReminderAt = reminderAt);
+  }
+
+  Future<void> _setFollowUpReminder() async {
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final lastDate = today.add(const Duration(days: 365));
+    var initialDate = _followUpReminderAt ??
+        today.add(const Duration(days: 7));
+    if (initialDate.isBefore(today)) initialDate = today;
+    if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: lastDate,
+      helpText: 'Choose a follow-up date',
+    );
+    if (date == null || !mounted) return;
+
+    final savedTime = _followUpReminderAt;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: savedTime == null
+          ? const TimeOfDay(hour: 9, minute: 0)
+          : TimeOfDay.fromDateTime(savedTime),
+      helpText: 'Choose a reminder time',
+    );
+    if (time == null || !mounted) return;
+
+    final reminderAt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    if (!reminderAt.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Choose a future date and time.'),
+        ),
+      );
+      return;
+    }
+
+    await _preferences.put(
+      'follow_up_reminder_at',
+      reminderAt.toIso8601String(),
+    );
+    await _syncHomePreferences();
+    if (!mounted) return;
+    setState(() => _followUpReminderAt = reminderAt);
+
+    var notificationScheduled = false;
+    try {
+      final notificationService =
+          FollowUpReminderService.instance;
+      final permissionGranted =
+          await notificationService.requestPermission();
+      await notificationService.cancel();
+      if (permissionGranted) {
+        await notificationService.schedule(reminderAt);
+        notificationScheduled = true;
+      }
+    } catch (_) {
+      // Keep the in-app reminder even if system notifications are unavailable.
+    }
+
+    if (!notificationScheduled) {
+      try {
+        await FollowUpReminderService.instance.cancel();
+      } catch (_) {
+        // The saved in-app reminder remains available on Home.
+      }
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          notificationScheduled
+              ? 'Follow-up reminder saved.'
+              : 'Reminder saved in the app. Notifications are unavailable or turned off.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeFollowUpReminder() async {
+    await _preferences.delete('follow_up_reminder_at');
+    await _syncHomePreferences();
+    try {
+      await FollowUpReminderService.instance.cancel();
+    } catch (_) {
+      // Removing the in-app reminder should still succeed.
+    }
+    if (mounted) {
+      setState(() => _followUpReminderAt = null);
+    }
+  }
+
+  Future<void> _syncHomePreferences() async {
+    await FirebaseCloudStore.instance.syncPreferences({
+      'accepted':
+          _preferences.get('accepted', defaultValue: false),
+      'daily_care_routine':
+          _preferences.get('daily_care_routine'),
+      'follow_up_reminder_at':
+          _preferences.get('follow_up_reminder_at'),
+    }).catchError((_) {});
   }
 
   Future<void> _toggleRoutine(
@@ -83,12 +253,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'date': _routineDate,
       'completed': _completed.toList(),
     });
-    await FirebaseCloudStore.instance.syncPreferences({
-      'accepted':
-          _preferences.get('accepted', defaultValue: false),
-      'daily_care_routine':
-          _preferences.get('daily_care_routine'),
-    }).catchError((_) {});
+    await _syncHomePreferences();
   }
 
   @override
@@ -98,6 +263,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         scans.isEmpty ? null : scans.first.record;
     final progress =
         _completed.length / _routineItems.length;
+    final today = DateTime.now();
+    final tipIndex =
+        (today.year * 372 + today.month * 31 + today.day) %
+            _dailyTips.length;
+    final dailyTip = _dailyTips[tipIndex];
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -157,6 +327,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _HeroCard(
                       onStartScan: () =>
                           context.go('/scan')),
+                  const SizedBox(height: 16),
+                  _DailyTipCard(
+                    title: dailyTip.title,
+                    message: dailyTip.message,
+                    onTap: () => context.go(
+                      Uri(
+                        path: '/learn',
+                        queryParameters: {
+                          'topic': dailyTip.title,
+                        },
+                      ).toString(),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   const SectionTitle('Your daily routine'),
                   const SizedBox(height: 10),
@@ -165,6 +348,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     completed: _completed,
                     progress: progress,
                     onChanged: _toggleRoutine,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActivitySummaryCard(
+                    savedVisits: scans.length,
+                    completedItems: _completed.length,
+                    totalItems: _routineItems.length,
+                  ),
+                  const SizedBox(height: 16),
+                  _FollowUpReminderCard(
+                    reminderAt: _followUpReminderAt,
+                    onSetReminder: _setFollowUpReminder,
+                    onRemoveReminder:
+                        _removeFollowUpReminder,
                   ),
                   const SizedBox(height: 24),
                   const SectionTitle('Explore SkinAI'),
@@ -231,6 +427,298 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyTipCard extends StatelessWidget {
+  const _DailyTipCard({
+    required this.title,
+    required this.message,
+    required this.onTap,
+  });
+
+  final String title;
+  final String message;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Card(
+      color:
+          colors.secondaryContainer.withValues(alpha: .55),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: colors.secondaryContainer,
+                foregroundColor:
+                    colors.onSecondaryContainer,
+                child: const Icon(
+                    Icons.lightbulb_outline_rounded),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TODAY’S SKIN TIP',
+                      style: TextStyle(
+                        color: colors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(message),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Read the related Learn article',
+                      style: TextStyle(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right,
+                  color: colors.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivitySummaryCard extends StatelessWidget {
+  const _ActivitySummaryCard({
+    required this.savedVisits,
+    required this.completedItems,
+    required this.totalItems,
+  });
+
+  final int savedVisits;
+  final int completedItems;
+  final int totalItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your activity',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _ActivityMetric(
+                    icon: Icons.bookmark_outline_rounded,
+                    value: '$savedVisits',
+                    label: 'Visits recorded',
+                    color: colors.primary,
+                  ),
+                ),
+                Container(
+                  height: 48,
+                  width: 1,
+                  color: colors.outlineVariant,
+                ),
+                Expanded(
+                  child: _ActivityMetric(
+                    icon: Icons.checklist_rounded,
+                    value: '$completedItems/$totalItems',
+                    label: 'Care tasks today',
+                    color: colors.tertiary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityMetric extends StatelessWidget {
+  const _ActivityMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  label,
+                  style:
+                      Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FollowUpReminderCard extends StatelessWidget {
+  const _FollowUpReminderCard({
+    required this.reminderAt,
+    required this.onSetReminder,
+    required this.onRemoveReminder,
+  });
+
+  final DateTime? reminderAt;
+  final VoidCallback onSetReminder;
+  final VoidCallback onRemoveReminder;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDue = reminderAt != null &&
+        !reminderAt!.isAfter(DateTime.now());
+    final formattedReminder = reminderAt == null
+        ? null
+        : DateFormat('EEE, MMM d · h:mm a')
+            .format(reminderAt!.toLocal());
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: colors.primaryContainer,
+                  foregroundColor: colors.primary,
+                  child: const Icon(
+                      Icons.notifications_none_rounded),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reminderAt == null
+                            ? 'Follow-up reminder'
+                            : isDue
+                                ? 'Your reminder is due'
+                                : 'Reminder set',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        formattedReminder ??
+                            'Set an optional reminder to revisit a saved concern or discuss it later.',
+                      ),
+                      if (reminderAt != null) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'This is a reminder you chose; it does not assess your health.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: onSetReminder,
+                  icon: Icon(
+                    reminderAt == null
+                        ? Icons.add_alarm_rounded
+                        : Icons.edit_calendar_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    reminderAt == null
+                        ? 'Set reminder'
+                        : 'Reschedule',
+                  ),
+                ),
+                if (reminderAt != null)
+                  TextButton.icon(
+                    onPressed: onRemoveReminder,
+                    icon: const Icon(Icons.close_rounded,
+                        size: 18),
+                    label: const Text('Dismiss'),
+                  ),
+              ],
             ),
           ],
         ),
