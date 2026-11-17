@@ -113,8 +113,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final saved = _preferences.get('follow_up_reminder_at');
     final reminderAt =
         saved is String ? DateTime.tryParse(saved) : null;
-    if (reminderAt == _followUpReminderAt || !mounted)
+    if (reminderAt == _followUpReminderAt || !mounted) {
       return;
+    }
     setState(() => _followUpReminderAt = reminderAt);
   }
 

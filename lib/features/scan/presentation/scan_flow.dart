@@ -444,8 +444,9 @@ class _ScanFlowState extends ConsumerState<ScanFlow> {
 
   Future<void> _retryAnalysis() async {
     final selectedImage = image;
-    if (selectedImage == null || _isAnalyzing || _saving)
+    if (selectedImage == null || _isAnalyzing || _saving) {
       return;
+    }
 
     await _analyzePhoto(selectedImage);
   }
